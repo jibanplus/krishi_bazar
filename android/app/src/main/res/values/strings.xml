@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">কৃষি বাজার</string>
+    <string name="title_activity_main">কৃষি বাজার</string>
+    <string name="package_name">com.bengalimarket.app</string>
+    <string name="custom_url_scheme">com.bengalimarket.app</string>
+</resources>
