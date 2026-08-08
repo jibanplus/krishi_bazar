@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BarChart3, CandlestickChart, LineChart, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { useMarketData, useAllTickers } from '@/modules/trading-terminal/hooks/useMarketData';
+import { useMarketData } from '@/modules/trading-terminal/hooks/useMarketData';
 import { TradingChart } from '@/modules/trading-terminal/components/TradingChart';
 import { OrderBook } from '@/modules/trading-terminal/components/OrderBook';
-import { MarketList } from '@/modules/trading-terminal/components/MarketList';
 import { formatPrice } from '@/modules/trading-terminal/utils/format';
 import type { Ticker } from '@/modules/trading-terminal/types';
 
@@ -14,6 +13,7 @@ type Position = {
   id: string; symbol: string; side: Side; entry_price: number; amount: number;
   leverage: number; margin: number; liquidation_price: number; status: string;
   opened_at: string; closed_at?: string | null; close_price?: number | null; realized_pnl?: number | null;
+  tp_price?: number | null; sl_price?: number | null; tp_executed_at?: string | null; sl_executed_at?: string | null;
 };
 type ChartType = 'candles' | 'line' | 'area';
 type Indicator = 'none' | 'ema' | 'rsi' | 'macd';
@@ -23,34 +23,42 @@ function pnlFor(side: Side, entry: number, mark: number, amount: number) {
   return (side === 'buy' ? mark - entry : entry - mark) * amount;
 }
 
-function coinLabel(t: Ticker) {
-  return t.symbol.split('/')[0];
-}
-
-function CompactCoinStrip({ tickers, selectedSymbol, onSelect }: { tickers: Ticker[]; selectedSymbol: string; onSelect: (s: string) => void }) {
-  return (
-    <div className="flex items-stretch gap-1.5 overflow-x-auto px-2 py-1.5 border-b scrollbar-hide" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-      {tickers.map((t, i) => {
-        const up = t.changePercent >= 0;
-        const active = t.symbol === selectedSymbol;
-        return (
-          <button key={t.symbol} onClick={() => onSelect(t.symbol)} className={`min-w-[112px] sm:min-w-[126px] shrink-0 rounded-lg px-2.5 py-1.5 text-left transition-all border ${active ? 'ring-1 ring-brand-500/50' : ''}`} style={{ background: active ? 'linear-gradient(135deg, rgba(59,130,246,.18), rgba(139,92,246,.10))' : 'var(--bg-card)', borderColor: active ? 'rgba(59,130,246,.45)' : 'var(--border-color)' }}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-extrabold text-[11px]" style={{ color: 'var(--text-primary)' }}>{coinLabel(t)}/USDT</span>
-              <span className={`text-[9px] font-bold ${up ? 'text-emerald-500' : 'text-red-500'}`}>{up ? '+' : ''}{t.changePercent.toFixed(2)}%</span>
-            </div>
-            <div className="mt-0.5 font-mono text-[12px] font-black tracking-tight" style={{ color: up ? '#10b981' : '#ef4444' }}>{formatPrice(t.price)}</div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function TradeBox({ side, setSide, leverage, setLeverage, amount, setAmount, walletBalance, ticker, busy, session, onOpen, onQuick }: any) {
+function TradeBox({ side, setSide, leverage, setLeverage, amount, setAmount, walletBalance, ticker, busy, session, onOpen, onQuick, currentPrice, tp, sl, setTp, setSl }: any) {
   const [action, setAction] = useState<Side>(side);
   useEffect(() => setAction(side), [side]);
   const quick = [25, 50, 75, 100];
+
+  // Calculate liquidation price
+  const liquidationPrice = useMemo(() => {
+    const entryPrice = currentPrice;
+    const lev = leverage;
+    if (side === 'buy') {
+      return entryPrice * (1 - 1/lev);
+    } else {
+      return entryPrice * (1 + 1/lev);
+    }
+  }, [currentPrice, leverage, side]);
+
+  // Calculate position size and TP/SL profit/loss
+  const positionSize = useMemo(() => {
+    const investmentAmount = Number(amount) || 0;
+    return (investmentAmount * leverage) / currentPrice;
+  }, [amount, leverage, currentPrice]);
+
+  const tpProfitLoss = useMemo(() => {
+    const tpPrice = Number(tp);
+    if (!tpPrice || !positionSize) return null;
+    const pnl = pnlFor(side, currentPrice, tpPrice, positionSize);
+    return pnl;
+  }, [tp, side, currentPrice, positionSize]);
+
+  const slProfitLoss = useMemo(() => {
+    const slPrice = Number(sl);
+    if (!slPrice || !positionSize) return null;
+    const pnl = pnlFor(side, currentPrice, slPrice, positionSize);
+    return pnl;
+  }, [sl, side, currentPrice, positionSize]);
+
   return (
     <div className="p-2 sm:p-2.5 space-y-2 text-[10px]">
       <div className="grid grid-cols-2 gap-1.5">
@@ -70,12 +78,40 @@ function TradeBox({ side, setSide, leverage, setLeverage, amount, setAmount, wal
       </div>
 
       <label className="block font-medium" style={{ color: 'var(--text-secondary)' }}>
-        Size ({ticker.symbol.split('/')[0]})
-        <input value={amount} onChange={e => setAmount(e.target.value)} type="number" min="0" step="any" className="input-field !px-2.5 !py-2 !text-xs mt-1 w-full" placeholder="Enter size" />
+        Investment Amount (₹)
+        <input value={amount} onChange={e => setAmount(e.target.value)} type="number" min="0" step="any" className="input-field !px-2.5 !py-2 !text-xs mt-1 w-full" placeholder="Enter amount" />
       </label>
 
       <div className="grid grid-cols-4 gap-1">
         {quick.map(p => <button key={p} onClick={() => onQuick(p)} className="py-1.5 rounded-md text-[9px] font-bold" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>{p}%</button>)}
+      </div>
+
+      <div className="rounded-lg border p-2" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="flex items-center justify-between">
+          <span style={{ color: 'var(--text-secondary)' }}>Liquidation Price</span>
+          <b className={side === 'buy' ? 'text-red-500' : 'text-red-500'}>{formatPrice(liquidationPrice)}</b>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <label className="block font-medium" style={{ color: 'var(--text-secondary)' }}>
+          TP (Take Profit)
+          <input value={tp} onChange={e => setTp(e.target.value)} type="number" min="0" step="any" className="input-field !px-2.5 !py-2 !text-xs mt-1 w-full" placeholder="TP price" />
+          {tpProfitLoss !== null && (
+            <div className={`mt-1 text-[9px] font-bold ${tpProfitLoss >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {tpProfitLoss >= 0 ? '+' : ''}₹{tpProfitLoss.toFixed(2)}
+            </div>
+          )}
+        </label>
+        <label className="block font-medium" style={{ color: 'var(--text-secondary)' }}>
+          SL (Stop Loss)
+          <input value={sl} onChange={e => setSl(e.target.value)} type="number" min="0" step="any" className="input-field !px-2.5 !py-2 !text-xs mt-1 w-full" placeholder="SL price" />
+          {slProfitLoss !== null && (
+            <div className={`mt-1 text-[9px] font-bold ${slProfitLoss >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {slProfitLoss >= 0 ? '+' : ''}₹{slProfitLoss.toFixed(2)}
+            </div>
+          )}
+        </label>
       </div>
 
       {/* Buy / Sell actions are intentionally separate from Long / Short selector. */}
@@ -102,10 +138,15 @@ export default function MarketPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ text: string; type: 'ok' | 'err' } | null>(null);
   const [showOrderBook, setShowOrderBook] = useState(true);
+  const [activeTab, setActiveTab] = useState<'open' | 'history'>('open');
+  const [editingPosition, setEditingPosition] = useState<string | null>(null);
+  const [editTp, setEditTp] = useState('');
+  const [editSl, setEditSl] = useState('');
+  const [tradeTp, setTradeTp] = useState('');
+  const [tradeSl, setTradeSl] = useState('');
 
   const { data } = useMarketData(symbol, 1200);
-  const { tickers } = useAllTickers(1800);
-  const ticker = useMemo(() => tickers.find(t => t.symbol === symbol) || data.ticker, [tickers, symbol, data.ticker]);
+  const ticker = data.ticker;
 
   const refreshTradingData = useCallback(async () => {
     if (!session?.user.id) { setWalletBalance(Number(profile?.balance || 0)); setPositions([]); setTradeHistory([]); return; }
@@ -134,8 +175,8 @@ export default function MarketPage() {
   const unrealizedPnl = livePositions.reduce((sum, p) => sum + p.pnl, 0);
   const marginUsed = positions.reduce((sum, p) => sum + Number(p.margin), 0);
   const equity = walletBalance + unrealizedPnl;
-  const notional = Number(amount || 0) * ticker.price;
-  const marginRequired = notional / leverage;
+  const investmentAmount = Number(amount || 0);
+  const marginRequired = investmentAmount;
   const showEma = indicator === 'ema';
   const showRsi = indicator === 'rsi';
   const showMacd = indicator === 'macd';
@@ -144,14 +185,30 @@ export default function MarketPage() {
 
   const openPosition = async (requestedSide: Side = side) => {
     if (!session) { notify('Please login before trading.', 'err'); return; }
-    const qty = Number(amount);
-    if (!qty || qty <= 0) { notify('Enter a valid amount.', 'err'); return; }
-    if (marginRequired > walletBalance) { notify('Insufficient wallet balance.', 'err'); return; }
+    const investmentAmount = Number(amount);
+    if (!investmentAmount || investmentAmount <= 0) { notify('Enter a valid amount.', 'err'); return; }
+    if (investmentAmount > walletBalance) { notify('Insufficient wallet balance.', 'err'); return; }
+    
+    // Calculate size based on investment amount and leverage
+    const qty = (investmentAmount * leverage) / ticker.price;
+    
     setBusy(true);
     const { data: result, error } = await supabase.rpc('open_perp_position', { p_symbol: symbol, p_side: requestedSide, p_entry_price: ticker.price, p_amount: qty, p_leverage: leverage, p_fee_rate: FEE_RATE });
     setBusy(false);
     if (error || !result?.success) { notify(result?.error || error?.message || 'Unable to open position.', 'err'); return; }
-    setAmount(''); await refreshTradingData(); await refreshProfile();
+    
+    // Set TP/SL if provided
+    if (result?.position_id && (tradeTp || tradeSl)) {
+      const tpPrice = tradeTp ? Number(tradeTp) : null;
+      const slPrice = tradeSl ? Number(tradeSl) : null;
+      await supabase.rpc('update_position_tp_sl', { 
+        p_position_id: result.position_id, 
+        p_tp_price: tpPrice, 
+        p_sl_price: slPrice 
+      });
+    }
+    
+    setAmount(''); setTradeTp(''); setTradeSl(''); await refreshTradingData(); await refreshProfile();
     notify(`${requestedSide === 'buy' ? 'Long / Buy' : 'Short / Sell'} opened at ${formatPrice(ticker.price)}`);
   };
 
@@ -171,22 +228,43 @@ export default function MarketPage() {
     if (hits.length) hits.forEach(p => closePosition(p.id, ticker.price));
   }, [ticker.price]);
 
-  const quickAmount = (percent: number) => setAmount(((walletBalance * percent / 100) * leverage / ticker.price).toFixed(6));
+  const quickAmount = (percent: number) => setAmount((walletBalance * percent / 100).toFixed(2));
+
+  const updatePositionTpSl = async (positionId: string) => {
+    if (!session) return;
+    setBusy(true);
+    const tpPrice = editTp ? Number(editTp) : null;
+    const slPrice = editSl ? Number(editSl) : null;
+    
+    const { data: result, error } = await supabase.rpc('update_position_tp_sl', { 
+      p_position_id: positionId, 
+      p_tp_price: tpPrice, 
+      p_sl_price: slPrice 
+    });
+    
+    setBusy(false);
+    if (error || !result?.success) { 
+      notify(result?.error || error?.message || 'Unable to update TP/SL.', 'err'); 
+      return; 
+    }
+    
+    setEditingPosition(null);
+    setEditTp('');
+    setEditSl('');
+    await refreshTradingData();
+    notify('TP/SL updated successfully');
+  };
 
   return (
     <div className="market-terminal-page w-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-[1700px] mx-auto px-1.5 sm:px-2 py-1.5">
         <div className="rounded-xl border overflow-hidden shadow-sm" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2.5 py-1.5 border-b text-[10px]" style={{ borderColor: 'var(--border-color)' }}>
-            <div className="flex items-center gap-2 font-black" style={{ color: 'var(--text-primary)' }}><span className="text-sm">{ticker.symbol}</span><span className={ticker.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}>{ticker.changePercent >= 0 ? '+' : ''}{ticker.changePercent.toFixed(2)}%</span><span className="font-mono text-xs">{formatPrice(ticker.price)}</span><span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />LIVE</span></div>
+            <div className="flex items-center gap-2 font-black" style={{ color: 'var(--text-primary)' }}><span className="text-sm">{ticker.symbol.split('/')[0]}</span><span className={ticker.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}>{ticker.changePercent >= 0 ? '+' : ''}{ticker.changePercent.toFixed(2)}%</span><span className="font-mono text-xs">{formatPrice(ticker.price)}</span><span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />LIVE</span></div>
             <div className="ml-auto flex items-center gap-2.5"><span className="flex items-center gap-1"><Wallet className="w-3 h-3 text-brand-500" /> <b>₹{walletBalance.toFixed(2)}</b></span><span>Equity <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>₹{equity.toFixed(2)}</b></span><span>PnL <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>{unrealizedPnl >= 0 ? '+' : ''}₹{unrealizedPnl.toFixed(2)}</b></span></div>
           </div>
 
-          <CompactCoinStrip tickers={tickers} selectedSymbol={symbol} onSelect={setSymbol} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-[175px_minmax(0,1fr)_245px] min-h-0 lg:h-[calc(100vh-160px)] lg:min-h-[650px]">
-            <aside className="hidden lg:block border-r min-h-0" style={{ borderColor: 'var(--border-color)' }}><MarketList tickers={tickers} selectedSymbol={symbol} onSelect={setSymbol} /></aside>
-
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_245px] min-h-0 lg:h-[calc(100vh-160px)] lg:min-h-[650px]">
             <section className="min-w-0 flex flex-col min-h-0">
               <div className="flex items-center gap-1 px-2 py-1 border-b overflow-x-auto" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                 {([["candles", CandlestickChart], ["line", LineChart], ["area", BarChart3]] as const).map(([type, Icon]) => <button key={type} onClick={() => setChartType(type)} className={`p-1.5 rounded ${chartType === type ? 'bg-brand-500/15 text-brand-500' : ''}`} style={chartType !== type ? { color: 'var(--text-secondary)' } : undefined}><Icon className="w-3.5 h-3.5" /></button>)}
@@ -197,10 +275,62 @@ export default function MarketPage() {
               <div className="flex-1 min-h-[360px] lg:min-h-0 p-0.5"><TradingChart candles={data.candles} showEma={showEma} showRsi={showRsi} showMacd={showMacd} height={390} /></div>
 
               <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
-                <div className="flex items-center gap-2 px-2 py-1.5 text-[9px] font-bold" style={{ color: 'var(--text-secondary)' }}><span className="text-brand-500">OPEN ({positions.length})</span><span>HISTORY ({tradeHistory.length})</span><span className="ml-auto">PnL <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>{unrealizedPnl >= 0 ? '+' : ''}{unrealizedPnl.toFixed(2)}</b></span></div>
-                <div className="max-h-32 overflow-auto">
-                  {positions.length ? positions.map(p => { const live = livePositions.find(x => x.id === p.id)!; return <div key={p.id} className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center px-2 py-1.5 border-t text-[9px]" style={{ borderColor: 'var(--border-color)' }}><div><b>{p.symbol.split('/')[0]}</b><span className={`ml-1 font-bold ${p.side === 'buy' ? 'text-emerald-500' : 'text-red-500'}`}>{p.side === 'buy' ? 'LONG' : 'SHORT'} {p.leverage}x</span></div><span>Entry {Number(p.entry_price).toFixed(2)}</span><span>Mark {live.mark.toFixed(2)}</span><span className={live.pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>PnL {live.pnl >= 0 ? '+' : ''}{live.pnl.toFixed(2)}</span><button disabled={busy} onClick={() => closePosition(p.id)} className="px-2 py-1 rounded bg-brand-500/10 text-brand-500 hover:bg-brand-500/20">Close</button></div>; }) : <div className="px-2 py-3 text-center text-[9px]" style={{ color: 'var(--text-secondary)' }}>No open positions</div>}
-                  {tradeHistory.slice(0, 6).map(p => <div key={p.id} className="grid grid-cols-[1fr_auto_auto] gap-2 px-2 py-1 border-t text-[9px]" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}><span>{p.symbol.split('/')[0]} {p.side === 'buy' ? 'LONG' : 'SHORT'} • {new Date(p.closed_at || p.opened_at).toLocaleString()}</span><span>{Number(p.close_price || 0).toFixed(2)}</span><b className={Number(p.realized_pnl || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}>{Number(p.realized_pnl || 0) >= 0 ? '+' : ''}{Number(p.realized_pnl || 0).toFixed(2)}</b></div>)}
+                <div className="flex items-center gap-2 px-2 py-1.5 border-b text-[9px] font-bold" style={{ borderColor: 'var(--border-color)' }}>
+                  <button onClick={() => setActiveTab('open')} className={`px-2 py-1 rounded ${activeTab === 'open' ? 'bg-brand-500/15 text-brand-500' : ''}`} style={activeTab !== 'open' ? { color: 'var(--text-secondary)' } : undefined}>OPEN ({positions.length})</button>
+                  <button onClick={() => setActiveTab('history')} className={`px-2 py-1 rounded ${activeTab === 'history' ? 'bg-brand-500/15 text-brand-500' : ''}`} style={activeTab !== 'history' ? { color: 'var(--text-secondary)' } : undefined}>HISTORY ({tradeHistory.length})</button>
+                  <span className="ml-auto">PnL <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>{unrealizedPnl >= 0 ? '+' : ''}{unrealizedPnl.toFixed(2)}</b></span>
+                </div>
+                <div className="max-h-48 overflow-auto">
+                  {activeTab === 'open' ? (
+                    positions.length ? positions.map(p => {
+                      const live = livePositions.find(x => x.id === p.id)!;
+                      const isEditing = editingPosition === p.id;
+                      return (
+                        <div key={p.id} className="border-t text-[9px]" style={{ borderColor: 'var(--border-color)' }}>
+                          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center px-2 py-1.5">
+                            <div><b>{p.symbol.split('/')[0]}</b><span className={`ml-1 font-bold ${p.side === 'buy' ? 'text-emerald-500' : 'text-red-500'}`}>{p.side === 'buy' ? 'LONG' : 'SHORT'} {p.leverage}x</span></div>
+                            <span>Entry {Number(p.entry_price).toFixed(2)}</span>
+                            <span>Mark {live.mark.toFixed(2)}</span>
+                            <span className={live.pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>PnL {live.pnl >= 0 ? '+' : ''}{live.pnl.toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <button disabled={busy} onClick={() => closePosition(p.id)} className="px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20">Close</button>
+                              <button disabled={busy} onClick={() => { setEditingPosition(p.id); setEditTp(p.tp_price?.toString() || ''); setEditSl(p.sl_price?.toString() || ''); }} className="px-2 py-1 rounded bg-brand-500/10 text-brand-500 hover:bg-brand-500/20">Edit</button>
+                            </div>
+                          </div>
+                          {isEditing && (
+                            <div className="px-2 py-2 border-t grid grid-cols-2 gap-2" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                              <div>
+                                <label className="block text-[8px] mb-1" style={{ color: 'var(--text-secondary)' }}>TP Price</label>
+                                <input value={editTp} onChange={e => setEditTp(e.target.value)} type="number" step="any" className="input-field !px-2 !py-1 !text-[9px] w-full" placeholder="TP price" />
+                              </div>
+                              <div>
+                                <label className="block text-[8px] mb-1" style={{ color: 'var(--text-secondary)' }}>SL Price</label>
+                                <input value={editSl} onChange={e => setEditSl(e.target.value)} type="number" step="any" className="input-field !px-2 !py-1 !text-[9px] w-full" placeholder="SL price" />
+                              </div>
+                              <div className="col-span-2 flex gap-1">
+                                <button disabled={busy} onClick={() => updatePositionTpSl(p.id)} className="flex-1 py-1 rounded bg-emerald-500 text-white text-[9px] font-bold">Save</button>
+                                <button disabled={busy} onClick={() => { setEditingPosition(null); setEditTp(''); setEditSl(''); }} className="flex-1 py-1 rounded bg-gray-500 text-white text-[9px] font-bold">Cancel</button>
+                              </div>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-2 px-2 py-1 text-[8px]" style={{ color: 'var(--text-tertiary)' }}>
+                            <span>Liq: {formatPrice(Number(p.liquidation_price))}</span>
+                            <span>Margin: ₹{Number(p.margin).toFixed(2)}</span>
+                            {p.tp_price && <span className="text-emerald-500">TP: {formatPrice(p.tp_price)}</span>}
+                            {p.sl_price && <span className="text-red-500">SL: {formatPrice(p.sl_price)}</span>}
+                          </div>
+                        </div>
+                      );
+                    }) : <div className="px-2 py-3 text-center text-[9px]" style={{ color: 'var(--text-secondary)' }}>No open positions</div>
+                  ) : (
+                    tradeHistory.length ? tradeHistory.map(p => (
+                      <div key={p.id} className="grid grid-cols-[1fr_auto_auto] gap-2 px-2 py-1 border-t text-[9px]" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+                        <span>{p.symbol.split('/')[0]} {p.side === 'buy' ? 'LONG' : 'SHORT'} • {new Date(p.closed_at || p.opened_at).toLocaleString()}</span>
+                        <span>{Number(p.close_price || 0).toFixed(2)}</span>
+                        <b className={Number(p.realized_pnl || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}>{Number(p.realized_pnl || 0) >= 0 ? '+' : ''}{Number(p.realized_pnl || 0).toFixed(2)}</b>
+                      </div>
+                    )) : <div className="px-2 py-3 text-center text-[9px]" style={{ color: 'var(--text-secondary)' }}>No trade history</div>
+                  )}
                 </div>
               </div>
             </section>
@@ -213,7 +343,7 @@ export default function MarketPage() {
               </div>
               <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="px-2.5 py-1.5 border-b text-[10px] font-black" style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}>TRADE <span className="text-brand-500">{ticker.symbol}</span></div>
-                <TradeBox side={side} setSide={setSide} leverage={leverage} setLeverage={setLeverage} amount={amount} setAmount={setAmount} walletBalance={walletBalance} ticker={ticker} busy={busy} session={session} onOpen={openPosition} onQuick={quickAmount} />
+                <TradeBox side={side} setSide={setSide} leverage={leverage} setLeverage={setLeverage} amount={amount} setAmount={setAmount} walletBalance={walletBalance} ticker={ticker} busy={busy} session={session} onOpen={openPosition} onQuick={quickAmount} currentPrice={ticker.price} tp={tradeTp} sl={tradeSl} setTp={setTradeTp} setSl={setTradeSl} />
               </div>
             </aside>
           </div>
