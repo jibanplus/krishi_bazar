@@ -1,17 +1,29 @@
+<<<<<<< HEAD
+import { useState } from 'react';
+=======
 import { useState, useEffect } from 'react';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Sun, Moon, TrendingUp, User, LogOut, Wallet, Bell, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { AuthModal } from './AuthModal';
+<<<<<<< HEAD
+
+=======
 import { supabase, type Announcement } from '@/lib/supabase';
 import { LiveTicker } from './LiveTicker';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { session, profile, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authModal, setAuthModal] = useState<null | 'login' | 'signup' | 'forgot'>(null);
+<<<<<<< HEAD
+  const location = useLocation();
+
+=======
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const location = useLocation();
 
@@ -22,6 +34,7 @@ export function Navbar() {
     })();
   }, []);
 
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   const navLinks = [
     { to: '/', label: 'মার্কেট' },
     { to: '/dashboard', label: 'ড্যাশবোর্ড' },
@@ -31,7 +44,10 @@ export function Navbar() {
     { to: '/profile', label: 'প্রোফাইল' },
   ];
 
+<<<<<<< HEAD
+=======
   const isAdmin = profile?.role === 'admin';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
   return (
     <>
@@ -147,6 +163,10 @@ export function Navbar() {
           )}
         </div>
 
+<<<<<<< HEAD
+
+
+=======
         {announcements.length > 0 && (
           <div className="border-t overflow-hidden" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
             <div className="flex items-center gap-2 py-1.5 px-4">
@@ -169,6 +189,7 @@ export function Navbar() {
             <LiveTicker />
           </div>
         )}
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       </header>
 
       {authModal && (

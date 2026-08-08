@@ -48,6 +48,24 @@ export function generateHistoricalCandles(config: MarketConfig, count: number, i
 }
 
 export function nextTickPrice(prevPrice: number, config: MarketConfig): number {
+<<<<<<< HEAD
+  // Random two-sided simulated market movement.
+  const direction = Math.random() < 0.5 ? -1 : 1;
+  const impulse = config.volatility * (0.10 + Math.random() * 0.45);
+  const noise = gaussian() * config.volatility * 0.12;
+  const meanReversion = ((config.basePrice - prevPrice) / Math.max(config.basePrice, 1)) * 0.02;
+  const change = prevPrice * (direction * impulse + noise + meanReversion);
+  let next = Math.max(prevPrice + change, config.tickSize);
+
+  const min = config.minPrice ?? 0;
+  const max = config.maxPrice ?? Number.POSITIVE_INFINITY;
+  if (Number.isFinite(max) && max > min) {
+    if (next > max) next = max - (next - max);
+    if (next < min) next = min + (min - next);
+    next = Math.min(max, Math.max(min, next));
+  }
+  return Math.round(next / config.tickSize) * config.tickSize;
+=======
   const shock = gaussian() * config.volatility;
   const trend = config.drift;
   const change = prevPrice * (trend + shock);
@@ -68,6 +86,7 @@ export function nextTickPrice(prevPrice: number, config: MarketConfig): number {
     next = Math.min(max, Math.max(min, next));
   }
   return next;
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 }
 
 export function generateSparkline(config: MarketConfig, count = 24): number[] {

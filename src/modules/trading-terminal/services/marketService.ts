@@ -18,7 +18,11 @@ export type MarketData = {
 };
 
 const INTERVAL_MS = 60_000;
+<<<<<<< HEAD
+const CANDLE_COUNT = 20000;
+=======
 const CANDLE_COUNT = 120;
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 const sparklineCache: Record<string, number[]> = {};
 const priceCache: Record<string, number> = {};
 const candleCache: Record<string, Candle[]> = {};

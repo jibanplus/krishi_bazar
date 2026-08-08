@@ -1,5 +1,9 @@
 import type { Ticker } from '@/modules/trading-terminal/types';
+<<<<<<< HEAD
+import { formatInr, formatPercent, formatCompact } from '@/modules/trading-terminal/utils/format';
+=======
 import { formatPrice, formatPercent, formatCompact } from '@/modules/trading-terminal/utils/format';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
 type Props = { tickers: Ticker[]; selectedSymbol: string; onSelect: (symbol: string) => void };
 
@@ -18,7 +22,11 @@ export function MarketList({ tickers, selectedSymbol, onSelect }: Props) {
   return (
     <div className="flex flex-col h-full min-h-0" style={{ background: 'var(--bg-card)' }}>
       <div className="px-2.5 py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+<<<<<<< HEAD
+        <h3 className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>COINS / INR</h3>
+=======
         <h3 className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>COINS / USDT</h3>
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       </div>
       <div className="flex-1 overflow-y-auto">
         {tickers.map((t, index) => {
@@ -30,12 +38,21 @@ export function MarketList({ tickers, selectedSymbol, onSelect }: Props) {
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-sm" style={{ background: coinGradients[index % coinGradients.length] }}>{t.symbol.split('/')[0].slice(0, 2)}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
+<<<<<<< HEAD
+                    <span className="text-[11px] font-black truncate tracking-wide" style={{ backgroundImage: coinGradients[index % coinGradients.length], WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{t.symbol.split('/')[0]}</span>
+                    <span className={`text-[9px] font-bold ${up ? 'text-emerald-500' : 'text-red-500'}`}>{up ? '+' : ''}{formatPercent(t.changePercent)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-1 mt-0.5">
+                    <span className="text-[8px]" style={{ color: 'var(--text-tertiary)' }}>INR</span>
+                    <span className="font-mono text-[10px] font-bold" style={{ color: up ? '#10b981' : '#ef4444' }}>{formatInr(t.price)}</span>
+=======
                     <span className="text-[10px] font-black truncate" style={{ color: 'var(--text-primary)' }}>{t.symbol.split('/')[0]}</span>
                     <span className={`text-[9px] font-bold ${up ? 'text-emerald-500' : 'text-red-500'}`}>{up ? '+' : ''}{formatPercent(t.changePercent)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-1 mt-0.5">
                     <span className="text-[8px]" style={{ color: 'var(--text-tertiary)' }}>USDT</span>
                     <span className="font-mono text-[10px] font-bold" style={{ color: up ? '#10b981' : '#ef4444' }}>{formatPrice(t.price)}</span>
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
                   </div>
                 </div>
               </div>
@@ -44,7 +61,11 @@ export function MarketList({ tickers, selectedSymbol, onSelect }: Props) {
         })}
       </div>
       <div className="px-2 py-1.5 border-t text-[8px] flex justify-between" style={{ borderColor: 'var(--border-color)', color: 'var(--text-tertiary)' }}>
+<<<<<<< HEAD
+        <span>Vol {formatCompact(tickers.reduce((s, t) => s + t.volume24h * 100, 0))}</span><span>{tickers.length} coins</span>
+=======
         <span>Vol {formatCompact(tickers.reduce((s, t) => s + t.volume24h, 0))}</span><span>{tickers.length} coins</span>
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       </div>
     </div>
   );

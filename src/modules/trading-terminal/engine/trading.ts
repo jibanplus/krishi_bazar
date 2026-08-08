@@ -1,4 +1,8 @@
 import type { Order, Position, Side, Ticker } from '@/modules/trading-terminal/types';
+<<<<<<< HEAD
+import { INR_PER_USDT } from '@/modules/trading-terminal/utils/format';
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
 export type TradingState = {
   balance: number;
@@ -8,6 +12,17 @@ export type TradingState = {
 };
 
 export const INITIAL_BALANCE = 100000;
+<<<<<<< HEAD
+export const MAKER_FEE_INR = 5;
+export const TAKER_FEE_INR = 5;
+export const MAKER_FEE_USDT = MAKER_FEE_INR / INR_PER_USDT;
+export const TAKER_FEE_USDT = TAKER_FEE_INR / INR_PER_USDT;
+
+export function executionFeeUSDT(type: 'maker' | 'taker'): number {
+  return type === 'maker' ? MAKER_FEE_USDT : TAKER_FEE_USDT;
+}
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
 export function createInitialState(balance = INITIAL_BALANCE): TradingState {
   return {
@@ -65,10 +80,20 @@ export function openPosition(
     price: number;
     amount: number;
     leverage: number;
+<<<<<<< HEAD
+    feeType?: 'maker' | 'taker';
+  }
+): { state: TradingState; position: Position; error?: string } {
+  const margin = (params.price * params.amount) / params.leverage;
+  const feeType = params.feeType ?? 'taker';
+  const openFee = executionFeeUSDT(feeType);
+  if (margin + openFee > state.balance) {
+=======
   }
 ): { state: TradingState; position: Position; error?: string } {
   const margin = (params.price * params.amount) / params.leverage;
   if (margin > state.balance) {
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
     return { state, position: {} as Position, error: 'Insufficient balance for margin' };
   }
   const position: Position = {
@@ -84,10 +109,19 @@ export function openPosition(
     pnlPercent: 0,
     margin,
     status: 'open',
+<<<<<<< HEAD
+    openFee,
+    openFeeType: feeType,
+    openedAt: Date.now(),
+  };
+  return {
+    state: { ...state, balance: state.balance - margin - openFee, positions: [position, ...state.positions] },
+=======
     openedAt: Date.now(),
   };
   return {
     state: { ...state, balance: state.balance - margin, positions: [position, ...state.positions] },
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
     position,
   };
 }
@@ -95,13 +129,22 @@ export function openPosition(
 export function closePosition(
   state: TradingState,
   positionId: string,
+<<<<<<< HEAD
+  closePrice: number,
+  closeFeeType: 'maker' | 'taker' = 'taker'
+=======
   closePrice: number
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 ): { state: TradingState; error?: string } {
   const position = state.positions.find((p) => p.id === positionId);
   if (!position || position.status !== 'open') {
     return { state, error: 'Position not found or already closed' };
   }
   const { pnl } = calcPnl(position.side, position.entryPrice, closePrice, position.amount, position.leverage);
+<<<<<<< HEAD
+  const closeFee = executionFeeUSDT(closeFeeType);
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   const closed: Position = {
     ...position,
     status: 'closed',
@@ -109,11 +152,20 @@ export function closePosition(
     pnl,
     pnlPercent: (pnl / position.margin) * 100,
     closedAt: Date.now(),
+<<<<<<< HEAD
+    closeFee,
+    closeFeeType,
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   };
   return {
     state: {
       ...state,
+<<<<<<< HEAD
+      balance: state.balance + position.margin + pnl - closeFee,
+=======
       balance: state.balance + position.margin + pnl,
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       positions: state.positions.map((p) => (p.id === positionId ? closed : p)),
     },
   };
@@ -143,7 +195,12 @@ export function checkLiquidations(
       (p.side === 'sell' && currentPrice >= p.liquidationPrice);
     if (isLiquidated) {
       const { pnl } = calcPnl(p.side, p.entryPrice, currentPrice, p.amount, p.leverage);
+<<<<<<< HEAD
+      const closeFee = TAKER_FEE_USDT;
+      const remaining = Math.max(0, p.margin + pnl - closeFee);
+=======
       const remaining = Math.max(0, p.margin + pnl);
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       balance += remaining;
       const closed: Position = {
         ...p,
@@ -152,6 +209,11 @@ export function checkLiquidations(
         pnl: pnl,
         pnlPercent: (pnl / p.margin) * 100,
         closedAt: Date.now(),
+<<<<<<< HEAD
+        closeFee,
+        closeFeeType: 'taker',
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       };
       liquidated.push(closed);
       return closed;

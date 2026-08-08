@@ -1,5 +1,9 @@
 import type { Ticker } from '@/modules/trading-terminal/types';
+<<<<<<< HEAD
+import { formatInr, formatPercent, formatCompact } from '@/modules/trading-terminal/utils/format';
+=======
 import { formatPrice, formatPercent, formatCompact } from '@/modules/trading-terminal/utils/format';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 type Props = {
@@ -25,7 +29,11 @@ export function TickerBar({ ticker }: Props) {
 
       <div className="flex items-center gap-2">
         <span className={`text-xl font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+<<<<<<< HEAD
+          {formatInr(ticker.price)}
+=======
           {formatPrice(ticker.price)}
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
         </span>
         <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${isUp ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -34,9 +42,15 @@ export function TickerBar({ ticker }: Props) {
       </div>
 
       <div className="hidden md:flex items-center gap-6 ml-auto text-xs">
+<<<<<<< HEAD
+        <Stat label="24h High" value={formatInr(ticker.high24h)} />
+        <Stat label="24h Low" value={formatInr(ticker.low24h)} />
+        <Stat label="24h Volume" value={`${formatCompact(ticker.volume24h * 100)} INR`} />
+=======
         <Stat label="24h High" value={formatPrice(ticker.high24h)} />
         <Stat label="24h Low" value={formatPrice(ticker.low24h)} />
         <Stat label="24h Volume" value={`${formatCompact(ticker.volume24h)} USDT`} />
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       </div>
     </div>
   );

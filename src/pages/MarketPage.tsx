@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+<<<<<<< HEAD
+import { BarChart3, CandlestickChart, LineChart, Wallet, ChevronDown, ChevronUp, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { useMarketData, useAllTickers } from '@/modules/trading-terminal/hooks/useMarketData';
+import { TradingChart } from '@/modules/trading-terminal/components/TradingChart';
+import { OrderBook } from '@/modules/trading-terminal/components/OrderBook';
+import { MarketList } from '@/modules/trading-terminal/components/MarketList';
+=======
 import { BarChart3, CandlestickChart, LineChart, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useMarketData } from '@/modules/trading-terminal/hooks/useMarketData';
 import { TradingChart } from '@/modules/trading-terminal/components/TradingChart';
 import { OrderBook } from '@/modules/trading-terminal/components/OrderBook';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 import { formatPrice } from '@/modules/trading-terminal/utils/format';
 import type { Ticker } from '@/modules/trading-terminal/types';
 
@@ -16,7 +26,26 @@ type Position = {
   tp_price?: number | null; sl_price?: number | null; tp_executed_at?: string | null; sl_executed_at?: string | null;
 };
 type ChartType = 'candles' | 'line' | 'area';
+<<<<<<< HEAD
+type Indicator = 'none' | 'ema' | 'rsi' | 'macd' | 'ema+rsi' | 'ema+macd';
+type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1D';
+const TF_MS: Record<Timeframe, number> = { '1m': 60_000, '5m': 300_000, '15m': 900_000, '1h': 3_600_000, '4h': 14_400_000, '1D': 86_400_000 };
+
+function aggregateCandles(candles: any[], timeframe: Timeframe) {
+  const bucket = TF_MS[timeframe];
+  if (timeframe === '1m') return candles;
+  const out: any[] = [];
+  for (const c of candles) {
+    const key = Math.floor(c.time / bucket) * bucket;
+    const last = out[out.length - 1];
+    if (!last || last.time !== key) out.push({ time: key, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume });
+    else { last.high = Math.max(last.high, c.high); last.low = Math.min(last.low, c.low); last.close = c.close; last.volume += c.volume; }
+  }
+  return out;
+}
+=======
 type Indicator = 'none' | 'ema' | 'rsi' | 'macd';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 const FEE_RATE = 0.001;
 
 function pnlFor(side: Side, entry: number, mark: number, amount: number) {
@@ -129,6 +158,10 @@ export default function MarketPage() {
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [chartType, setChartType] = useState<ChartType>('candles');
   const [indicator, setIndicator] = useState<Indicator>('ema');
+<<<<<<< HEAD
+  const [timeframe, setTimeframe] = useState<Timeframe>('15m');
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   const [positions, setPositions] = useState<Position[]>([]);
   const [walletBalance, setWalletBalance] = useState(Number(profile?.balance || 0));
   const [tradeHistory, setTradeHistory] = useState<Position[]>([]);
@@ -146,7 +179,13 @@ export default function MarketPage() {
   const [tradeSl, setTradeSl] = useState('');
 
   const { data } = useMarketData(symbol, 1200);
+<<<<<<< HEAD
+  const { tickers } = useAllTickers(1500);
   const ticker = data.ticker;
+  const chartCandles = useMemo(() => aggregateCandles(data.candles, timeframe), [data.candles, timeframe]);
+=======
+  const ticker = data.ticker;
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
   const refreshTradingData = useCallback(async () => {
     if (!session?.user.id) { setWalletBalance(Number(profile?.balance || 0)); setPositions([]); setTradeHistory([]); return; }
@@ -177,9 +216,15 @@ export default function MarketPage() {
   const equity = walletBalance + unrealizedPnl;
   const investmentAmount = Number(amount || 0);
   const marginRequired = investmentAmount;
+<<<<<<< HEAD
+  const showEma = indicator === 'ema' || indicator === 'ema+rsi' || indicator === 'ema+macd';
+  const showRsi = indicator === 'rsi' || indicator === 'ema+rsi';
+  const showMacd = indicator === 'macd' || indicator === 'ema+macd';
+=======
   const showEma = indicator === 'ema';
   const showRsi = indicator === 'rsi';
   const showMacd = indicator === 'macd';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
   const notify = (text: string, type: 'ok' | 'err' = 'ok') => { setNotice({ text, type }); window.setTimeout(() => setNotice(null), 3500); };
 
@@ -264,6 +309,28 @@ export default function MarketPage() {
             <div className="ml-auto flex items-center gap-2.5"><span className="flex items-center gap-1"><Wallet className="w-3 h-3 text-brand-500" /> <b>₹{walletBalance.toFixed(2)}</b></span><span>Equity <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>₹{equity.toFixed(2)}</b></span><span>PnL <b className={unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}>{unrealizedPnl >= 0 ? '+' : ''}₹{unrealizedPnl.toFixed(2)}</b></span></div>
           </div>
 
+<<<<<<< HEAD
+          <div className="grid grid-cols-1 lg:grid-cols-[205px_minmax(0,1fr)_245px] min-h-0 lg:h-[calc(100vh-160px)] lg:min-h-[650px]">
+            <aside className="hidden lg:block min-h-0 border-r" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="h-full"><div className="px-2.5 py-2 border-b text-[9px] font-black tracking-widest" style={{borderColor:'var(--border-color)',color:'var(--text-secondary)'}}>MARKETS</div><MarketList tickers={tickers.filter(t => ['BTC/USDT','ETH/USDT','SOL/USDT','DOGE/USDT'].includes(t.symbol))} selectedSymbol={symbol} onSelect={setSymbol} /></div>
+            </aside>
+            <section className="min-w-0 flex flex-col min-h-0">
+              <div className="lg:hidden flex gap-1.5 px-2 py-1.5 overflow-x-auto border-b" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
+                {tickers.filter(t => ['BTC/USDT','ETH/USDT','SOL/USDT','DOGE/USDT'].includes(t.symbol)).map(t => (
+                  <button key={t.symbol} onClick={() => setSymbol(t.symbol)} className={`shrink-0 px-2.5 py-1.5 rounded-lg border text-[9px] font-black ${symbol === t.symbol ? 'border-brand-500/50 bg-brand-500/10 text-brand-500' : ''}`} style={symbol !== t.symbol ? { borderColor: 'var(--border-color)', color: 'var(--text-secondary)' } : undefined}>
+                    {t.symbol.split('/')[0]} <span className={t.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}>{t.changePercent >= 0 ? '+' : ''}{t.changePercent.toFixed(2)}%</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 px-2 py-1 border-b overflow-x-auto" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                {([["candles", CandlestickChart], ["line", LineChart], ["area", BarChart3]] as const).map(([type, Icon]) => <button key={type} onClick={() => setChartType(type)} title={type} className={`p-1.5 rounded ${chartType === type ? 'bg-brand-500/15 text-brand-500' : ''}`} style={chartType !== type ? { color: 'var(--text-secondary)' } : undefined}><Icon className="w-3.5 h-3.5" /></button>)}
+                <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border-color)' }} />
+                {(['1m','5m','15m','1h','4h','1D'] as Timeframe[]).map(tf => <button key={tf} onClick={() => setTimeframe(tf)} className={`px-2 py-1 rounded text-[9px] font-bold ${tf === timeframe ? 'bg-brand-500/15 text-brand-500' : ''}`} style={tf !== timeframe ? { color: 'var(--text-secondary)' } : undefined}>{tf}</button>)}
+                <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border-color)' }} />
+                <div className="flex gap-1">{(['none','ema','rsi','macd','ema+rsi','ema+macd'] as Indicator[]).map(k => <button key={k} onClick={() => setIndicator(k)} className={`px-1.5 py-1 rounded text-[8px] uppercase font-bold ${indicator === k ? 'bg-brand-500/15 text-brand-500' : ''}`} style={indicator !== k ? { color: 'var(--text-secondary)' } : undefined}>{k === 'none' ? 'OFF' : k}</button>)}</div>
+              </div>
+              <div className="flex-1 min-h-[420px] lg:min-h-0 p-0.5 overflow-hidden"><TradingChart candles={chartCandles} chartType={chartType} showEma={showEma} showRsi={showRsi} showMacd={showMacd} height={430} /></div>
+=======
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_245px] min-h-0 lg:h-[calc(100vh-160px)] lg:min-h-[650px]">
             <section className="min-w-0 flex flex-col min-h-0">
               <div className="flex items-center gap-1 px-2 py-1 border-b overflow-x-auto" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
@@ -273,6 +340,7 @@ export default function MarketPage() {
                 <div className="ml-auto flex gap-1">{(['none','ema','rsi','macd'] as Indicator[]).map(k => <button key={k} onClick={() => setIndicator(k)} className={`px-1.5 py-1 rounded text-[8px] uppercase ${indicator === k ? 'bg-brand-500/15 text-brand-500' : ''}`} style={indicator !== k ? { color: 'var(--text-secondary)' } : undefined}>{k}</button>)}</div>
               </div>
               <div className="flex-1 min-h-[360px] lg:min-h-0 p-0.5"><TradingChart candles={data.candles} showEma={showEma} showRsi={showRsi} showMacd={showMacd} height={390} /></div>
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
               <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="flex items-center gap-2 px-2 py-1.5 border-b text-[9px] font-bold" style={{ borderColor: 'var(--border-color)' }}>

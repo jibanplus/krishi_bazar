@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { formatInr, formatAmount, formatTime } from '@/modules/trading-terminal/utils/format';
+=======
 import { formatPrice, formatAmount, formatTime } from '@/modules/trading-terminal/utils/format';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 
 type Trade = { price: number; amount: number; side: 'buy' | 'sell'; time: number };
 
@@ -21,7 +25,11 @@ export function RecentTrades({ trades }: Props) {
             className="grid grid-cols-3 px-3 py-[3px] hover:bg-slate-800/50 transition-colors"
           >
             <span className={t.side === 'buy' ? 'text-green-400' : 'text-red-400'}>
+<<<<<<< HEAD
+              {formatInr(t.price)}
+=======
               {formatPrice(t.price)}
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
             </span>
             <span className="text-right text-gray-300">{formatAmount(t.amount, 4)}</span>
             <span className="text-right text-gray-500">{formatTime(t.time)}</span>

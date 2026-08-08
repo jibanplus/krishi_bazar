@@ -18,7 +18,13 @@ const defaultFaqs: FaqItem[] = [
   { id: 'd3', question: 'উইথড্র কীভাবে করবো?', answer: 'ওয়ালেট পেজ থেকে "উইথড্র" বাটনে ক্লিক করুন। আপনার ব্যাংক/UPI বিবরণ দিন এবং পরিমাণ লিখুন। অ্যাডমিন অনুমোদনের পর ২৪ ঘণ্টার মধ্যে টাকা পৌঁছে যাবে।', category: 'withdraw', sort_order: 3 },
   { id: 'd4', question: 'রেফারেল বোনাস কীভাবে পাবো?', answer: 'আপনার রেফারেল লিংক বন্ধুদের শেয়ার করুন। তারা সাইনআপ করে প্রথম ডিপোজিট করলে আপনি এবং আপনার বন্ধু উভয়েই বোনাস পাবেন। লেভেল 1 এবং লেভেল 2 কমিশন আছে!', category: 'referral', sort_order: 4 },
   { id: 'd5', question: 'বোনাস উত্তোলন করতে কী করতে হবে?', answer: 'বোনাস থেকে উইথড্র করতে আপনাকে 20x ওয়েজারিং সম্পন্ন করতে হবে। অর্থাৎ বোনাসের ২০ গুণ পরিমাণের ট্রেড সম্পন্ন করতে হবে।', category: 'bonus', sort_order: 5 },
+<<<<<<< HEAD
+  { id: 'd6', question: 'ট্রেডিং ফি কত?', answer: 'প্রতিটি ট্রেড এক্সিকিউশনে ফি নির্ধারিত: Limit order হলে Maker fee ₹5 এবং Market order হলে Taker fee ₹5। Margin trade-এর Open ও Close দুটো execution-এ আলাদা করে ফি কাটা হয়। মোট ফি Trade History-তে দেখা যাবে।', category: 'trade', sort_order: 6 },
+  { id: 'd9', question: 'Trade History-তে কী কী দেখা যাবে?', answer: 'প্রতিটি বন্ধ ট্রেডে Open price, Close price, quantity, leverage, margin, Open date/time, Close date/time, Maker/Taker fee এবং মোট fee, সঙ্গে realized PnL ও ROE দেখা যাবে। কোনো fee confirmation popup-এ দেখানো হয় না; fee শুধু Trade History-এর বিস্তারিত অংশে থাকে।', category: 'trade', sort_order: 9 },
+  { id: 'd10', question: 'Profit কীভাবে balance-এ যোগ হয়?', answer: 'Trade Close করলে margin ফেরত আসে এবং realized profit হলে সেটি balance-এ credit হয়। Loss হলে loss বাদ যায়। Close execution-এর ₹5 Maker বা Taker fee আলাদা করে balance থেকে কাটা হয়। Trade History-তে final PnL ও fee দুটোই পরিষ্কারভাবে দেখা যায়।', category: 'trade', sort_order: 10 },
+=======
   { id: 'd6', question: 'চার্জ কত?', answer: 'প্রতিটি ট্রেডে 0.5% চার্জ প্রযোজ্য। এই চার্জ অটোমেটিক্যালি কাটা হয় - বাই-এ যোগ হয় এবং সেল-এ বিয়োগ হয়।', category: 'trade', sort_order: 6 },
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   { id: 'd7', question: 'মার্কেট কখন বন্ধ থাকে?', answer: 'কৃষি বাজার সপ্তাহে ৭ দিন ২৪ ঘণ্টা চালু থাকে। শুধুমাত্র মেইনটেনেন্স মোডে সাময়িকভাবে বন্ধ হতে পারে।', category: 'market', sort_order: 7 },
   { id: 'd8', question: 'আমার অ্যাকাউন্ট ব্লক হয়েছে কেন?', answer: 'প্রতারণামূলক কার্যকলাপ, একাধিক অ্যাকাউন্ট, বা নিয়ম লঙ্ঘনের কারণে অ্যাকাউন্ট ব্লক হতে পারে। সাপোর্ট টিমের সাথে যোগাযোগ করুন।', category: 'account', sort_order: 8 },
 ];
@@ -49,7 +55,14 @@ export function SupportFaqPage() {
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
+<<<<<<< HEAD
+      const loaded = data && data.length > 0 ? (data as FaqItem[]) : [];
+      const tradeFaqs = defaultFaqs.filter((f) => f.category === 'trade');
+      const merged = [...loaded, ...tradeFaqs.filter((f) => !loaded.some((x) => x.question === f.question))];
+      setFaqs(merged.length ? merged.sort((a, b) => a.sort_order - b.sort_order) : defaultFaqs);
+=======
       setFaqs(data && data.length > 0 ? (data as FaqItem[]) : defaultFaqs);
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
       setLoading(false);
     }
     load();

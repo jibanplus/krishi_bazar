@@ -108,6 +108,11 @@ export function WalletPage() {
     admin_credit: 'অ্যাডমিন ক্রেডিট',
     admin_debit: 'অ্যাডমিন ডেবিট',
     coupon: 'কুপন',
+<<<<<<< HEAD
+    perp_open: 'Perpetual Open',
+    perp_close: 'Perpetual Close',
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
   };
 
   return (
@@ -287,7 +292,11 @@ export function WalletPage() {
         ) : (
           <div className="space-y-2">
             {filtered.map((tx) => {
+<<<<<<< HEAD
+              const isCredit = tx.type === 'deposit' || tx.type === 'bonus' || tx.type === 'referral' || tx.type === 'sell' || tx.type === 'admin_credit' || tx.type === 'coupon' || tx.type === 'perp_close';
+=======
               const isCredit = tx.type === 'deposit' || tx.type === 'bonus' || tx.type === 'referral' || tx.type === 'sell' || tx.type === 'admin_credit' || tx.type === 'coupon';
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
               return (
                 <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: 'var(--border-color)' }}>
                   <div className="flex items-center gap-3">

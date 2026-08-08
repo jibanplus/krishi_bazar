@@ -41,6 +41,11 @@ export type Trade = {
   amount: number;
   total: number;
   time: number;
+<<<<<<< HEAD
+  fee?: number;
+  feeType?: 'maker' | 'taker';
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 };
 
 export type Order = {
@@ -71,6 +76,13 @@ export type Position = {
   status: PositionStatus;
   openedAt: number;
   closedAt?: number;
+<<<<<<< HEAD
+  openFee?: number;
+  closeFee?: number;
+  openFeeType?: 'maker' | 'taker';
+  closeFeeType?: 'maker' | 'taker';
+=======
+>>>>>>> b73753d9b5b011ce2b1c2d010955cdf0eb23fa0c
 };
 
 export type MarketConfig = {
